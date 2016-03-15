@@ -2,6 +2,14 @@ program lexer;
 const tab = ^I;
 var look: char;
 
+
+
+
+
+
+
+
+
 procedure getChar;
 begin
  Read(look);
@@ -16,7 +24,7 @@ end;
 procedure Abort (s:string);
 begin
  error(s);
- hait;
+ halt;
 end;
 
 procedure expected(s:string);
@@ -27,17 +35,17 @@ end;
 procedure match(x:char);
 begin
  if look = x then getChar
- else expected("" + x +"");
+ else expected('''' + x +'''');
 end;
 
 
-function is alpha ( c: char);
+function isalpha ( c: char):boolean;
 begin
  isAlpha :=upcase(c) in ['A'..'Z'];
 end;
 
 
-function is digit(c:char):boolean;
+function isdigit(c:char):boolean;
 begin
  isdigit := c in ['0'..'9'];
 end;
@@ -77,6 +85,100 @@ end;
 
 
 
+procedure expression;forward;
+
+procedure factor;
 begin
+ if look= '(' then begin
+  Match('(');
+  expression;
+  match(')');
+  end
+ else
+  emitln('move#' + getnum + 'D0')
+end;
+
+procedure multiply;
+begin
+ match('*');
+ factor;
+ emitln('muls(sp)+,d0');
+end;
+
+
+procedure divide;
+begin
+ match('/');
+ factor;
+ emitln('move(sp)+,d1');
+ emitln('divs d1,d0');
+end;
+
+procedure term;
+begin
+
+ while look in ['*','/'] do begin
+  emitln('move d0,-(sp)');
+  case look of
+  '*':multiply;
+  '/':divide;
+  else expected('mulop');
+  end;
+ end;
+end;
+
+procedure Add;
+begin
+ match ('+');
+ term;
+ emitln('add (sp) +, D0');
+end;
+
+procedure subtract;
+begin
+ match('-');
+ term;
+ emitln('sub (sp)+,d0');
+ emitln('neg d0');
+end;
+
+function isaddop(c: char):boolean;
+begin
+ isaddop := c in ['+','-'];
+end;
+
+
+procedure expression;
+begin
+ if IsAddop(look) then
+ emitln('clr d0')
+ else
+ term;
+ while look in ['+', '-'] do begin
+  emitln ('move d0,-(sp)');
+  case look of
+  '+':add;
+  '-':subtract;
+  else expected('addop');
+  end;
+ end;
+end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+begin
+ expression;
  init;
 end.

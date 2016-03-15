@@ -2,6 +2,14 @@ program lexer;
 const tab = ^I;
 var look: char;
 
+
+
+
+
+
+
+
+
 procedure getChar;
 begin
  Read(look);
@@ -77,6 +85,100 @@ end;
 
 
 
+procedure expression;forward;
+
+procedure factor;
 begin
+ if look= '(' then begin
+  Match('(');
+  expression;
+  match(')');
+  end
+ else
+  emitln('move#' + getnum + 'D0')
+end;
+
+procedure multiply;
+begin
+ match('*');
+ factor;
+ emitln('muls(sp)+,d0');
+end;
+
+
+procedure divide;
+begin
+ match('/');
+ factor;
+ emitln('move(sp)+,d1');
+ emitln('divs d1,d0');
+end;
+
+procedure term;
+begin
+
+ while look in ['*','/'] do begin
+  emitln('move d0,-(sp)');
+  case look of
+  '*':multiply;
+  '/':divide;
+  else expected('mulop');
+  end;
+ end;
+end;
+
+procedure Add;
+begin
+ match ('+');
+ term;
+ emitln('add (sp) +, D0');
+end;
+
+procedure subtract;
+begin
+ match('-');
+ term;
+ emitln('sub (sp)+,d0');
+ emitln('neg d0');
+end;
+
+function isaddop(c: char):boolean;
+begin
+ isaddop := c in ['+','-'];
+end;
+
+
+procedure expression;
+begin
+ if IsAddop(look) then
+ emitln('clr d0')
+ else
+ term;
+ while look in ['+', '-'] do begin
+  emitln ('move d0,-(sp)');
+  case look of
+  '+':add;
+  '-':subtract;
+  else expected('addop');
+  end;
+ end;
+end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+begin
+ expression;
  init;
 end.
