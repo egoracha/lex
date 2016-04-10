@@ -1,6 +1,7 @@
 program lexer;
-const tab = ^I;
+const tab= ^i; CR= ^M;
 var look: char;
+    token: string;
 
 
 
@@ -50,19 +51,8 @@ begin
  isdigit := c in ['0'..'9'];
 end;
 
-function getname:char;
-begin
- if not isalpha(look) then expected('Name');
- getname := upcase(look);
- GetChar;
-end;
 
-function getnum:char;
-begin
- if not isdigit(look) then expected ( 'integer');
- getnum :=look;
- getchar;
-end;
+
 
 
 procedure Emit(s: string);
@@ -85,100 +75,96 @@ end;
 
 
 
-procedure expression;forward;
 
-procedure factor;
-begin
- if look= '(' then begin
-  Match('(');
-  expression;
-  match(')');
-  end
- else
-  emitln('move#' + getnum + 'D0')
-end;
 
-procedure multiply;
+
+
+
+
+
+
+
+
+
+{====================LEXER==============}
+function iswhite(c:char):boolean;
 begin
- match('*');
- factor;
- emitln('muls(sp)+,d0');
+ iswhite:=c in [' ', TAB];
 end;
 
 
-procedure divide;
+procedure skipwhite;
 begin
- match('/');
- factor;
- emitln('move(sp)+,d1');
- emitln('divs d1,d0');
+ while iswhite(look) do
+ getchar;
 end;
 
-procedure term;
-begin
 
- while look in ['*','/'] do begin
-  emitln('move d0,-(sp)');
-  case look of
-  '*':multiply;
-  '/':divide;
-  else expected('mulop');
-  end;
+
+function IsAlnum(c:char): boolean;
+begin
+ IsAlnum:= isalpha(c) or isdigit(c);
+end;
+
+function GetName: string;
+var x:string;
+begin x:='';
+ if not isalpha(look) then expected ('Name');
+ while isAlnum(look) do begin;
+  x := x + upcase(look);
+  getChar;
  end;
-end;
-
-procedure Add;
-begin
- match ('+');
- term;
- emitln('add (sp) +, D0');
-end;
-
-procedure subtract;
-begin
- match('-');
- term;
- emitln('sub (sp)+,d0');
- emitln('neg d0');
-end;
-
-function isaddop(c: char):boolean;
-begin
- isaddop := c in ['+','-'];
+ getname:=x;
 end;
 
 
-procedure expression;
+function Getnum: string;
+var x: string;
 begin
- if IsAddop(look) then
- emitln('clr d0')
- else
- term;
- while look in ['+', '-'] do begin
-  emitln ('move d0,-(sp)');
-  case look of
-  '+':add;
-  '-':subtract;
-  else expected('addop');
-  end;
+ x:='';
+ if not isdigit(look) then expected('integer');
+ while isdigit(look) do begin
+  x:=x+look;
+  getchar;
  end;
+ getnum:=x;
+end;
+
+
+function scan: string;
+begin
+ if isalpha(look) then
+ scan := getname
+ else if isdigit(look) then
+  scan :=getnum
+ else begin
+  scan:=look;
+  getchar;
+  end;
+
 end;
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
 begin
- expression;
  init;
+ repeat
+   token:=scan;
+   writeln(token);
+   until token = CR;
 end.
+
+
+
+
+
+
+
+
+
+
+
+
+
